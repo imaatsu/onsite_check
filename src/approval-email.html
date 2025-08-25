@@ -1,0 +1,62 @@
+<!-- 承認依頼メール（HTMLテンプレート） -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      body { font-family: Arial, 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif; line-height: 1.6; }
+      h3 { margin: 16px 0 8px; }
+      hr { margin: 16px 0; border: none; border-top: 1px solid #ddd; }
+      .meta p { margin: 4px 0; }
+      ul { margin: 6px 0 10px 20px; }
+    </style>
+  </head>
+  <body>
+    <p>以下の改善が報告されました。承認をお願いします。</p>
+    <div class="meta">
+      <p><b>管理ID:</b> <?= managementId ?></p>
+      <p><b>現場場所:</b> <?= place ?></p>
+    </div>
+
+    <hr/>
+    <h3>問題報告</h3>
+    <p><b>報告日時:</b> <?= problemTimestamp ?></p>
+    <p><b>報告者:</b> <?= reporter ?></p>
+    <p><b>内容:</b><br/>
+      <?!= (problemText || '').replace(/\n/g, '<br/>') ?>
+    </p>
+    <p><b>写真:</b><br/>
+      <? if (problemPhotoUrls && problemPhotoUrls.length) { ?>
+        <ul>
+          <? for (var i = 0; i < problemPhotoUrls.length; i++) { var u = problemPhotoUrls[i]; ?>
+            <li><a href="<?= u ?>"><?= u ?></a></li>
+          <? } ?>
+        </ul>
+      <? } else { ?>
+        （写真なし）
+      <? } ?>
+    </p>
+
+    <hr/>
+    <h3>改善報告</h3>
+    <p><b>改善報告日時:</b> <?= correctionTimestamp ?></p>
+    <p><b>改善内容:</b><br/>
+      <?!= (correctionText || '').replace(/\n/g, '<br/>') ?>
+    </p>
+    <p><b>改善後の写真:</b><br/>
+      <? if (correctionPhotoUrls && correctionPhotoUrls.length) { ?>
+        <ul>
+          <? for (var j = 0; j < correctionPhotoUrls.length; j++) { var cu = correctionPhotoUrls[j]; ?>
+            <li><a href="<?= cu ?>"><?= cu ?></a></li>
+          <? } ?>
+        </ul>
+      <? } else { ?>
+        （写真なし）
+      <? } ?>
+    </p>
+
+    <hr/>
+    <p><a href="<?= rowLink ?>">スプレッドシートの該当行を開く</a></p>
+  </body>
+  </html>
+
