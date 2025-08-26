@@ -71,16 +71,42 @@ function buildSlackBlocksForProblem_(data) {
  * 承認依頼メール本文（HTML）を生成
  */
 function buildApprovalEmailHtml_(data) {
-  const template = HtmlService.createTemplateFromFile('src/approval-email');
-  template.managementId = data.managementId;
-  template.place = data.place;
-  template.problemTimestamp = data.problemTimestamp;
-  template.reporter = data.reporter;
-  template.problemText = data.problemText;
-  template.problemPhotoUrls = data.problemPhotoUrls || [];
-  template.correctionTimestamp = data.correctionTimestamp;
-  template.correctionText = data.correctionText;
-  template.correctionPhotoUrls = data.correctionPhotoUrls || [];
-  template.rowLink = data.rowLink;
-  return template.evaluate().getContent();
+  const {
+    managementId,
+    place,
+    problemText,
+    problemPhotoUrls,
+    problemTimestamp,
+    reporter,
+    correctionText,
+    correctionPhotoUrls,
+    correctionTimestamp,
+    rowLink,
+  } = data;
+
+  const problemPhotosHtml = (problemPhotoUrls && problemPhotoUrls.length)
+    ? '<ul>' + problemPhotoUrls.map(u => `<li><a href="${u}">${u}</a></li>`).join('') + '</ul>'
+    : '（写真なし）';
+  const correctionPhotosHtml = (correctionPhotoUrls && correctionPhotoUrls.length)
+    ? '<ul>' + correctionPhotoUrls.map(u => `<li><a href="${u}">${u}</a></li>`).join('') + '</ul>'
+    : '（写真なし）';
+
+  return [
+    `<p>以下の改善が報告されました。承認をお願いします。</p>`,
+    `<p><b>管理ID:</b> ${managementId}</p>`,
+    `<p><b>現場場所:</b> ${place}</p>`,
+    `<hr/>`,
+    `<h3>問題報告</h3>`,
+    `<p><b>報告日時:</b> ${problemTimestamp}</p>`,
+    `<p><b>報告者:</b> ${reporter}</p>`,
+    `<p><b>内容:</b><br/>${(problemText || '').replace(/\n/g, '<br/>')}</p>`,
+    `<p><b>写真:</b><br/>${problemPhotosHtml}</p>`,
+    `<hr/>`,
+    `<h3>改善報告</h3>`,
+    `<p><b>改善報告日時:</b> ${correctionTimestamp}</p>`,
+    `<p><b>改善内容:</b><br/>${(correctionText || '').replace(/\n/g, '<br/>')}</p>`,
+    `<p><b>改善後の写真:</b><br/>${correctionPhotosHtml}</p>`,
+    `<hr/>`,
+    `<p><a href="${rowLink}">スプレッドシートの該当行を開く</a></p>`
+  ].join('\n');
 }

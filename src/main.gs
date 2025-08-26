@@ -9,6 +9,12 @@
  * イベントオブジェクト e は「スプレッドシートの onFormSubmit（インストール型）」を想定
  */
 function onProblemFormSubmit(e) {
+    // ★★★ 追加: 正しいシートからの送信かを確認 ★★★
+  if (e && e.range && e.range.getSheet().getName() !== SHEET_NAME_REPORTS) {
+    Logger.log('onProblemFormSubmit: Not a submission to the report sheet. Skipping.');
+    return;
+  }
+
   const row = e && e.range ? e.range.getRow() : null;
   if (!row) {
     Logger.log('Invalid event object: no row');
@@ -115,41 +121,45 @@ function onProblemFormSubmit(e) {
  * イベントオブジェクト e は「スプレッドシートの onFormSubmit（インストール型）」を想定
  */
 function onCorrectionFormSubmit(e) {
-  try {
-    // e.values を優先（フォームの質問順で格納）。
-    // 期待順: [タイムスタンプ, 管理ID, 改善内容, 改善後の写真, ...]
-    const v = e && e.values ? e.values : null;
-    let managementId = '';
-    let correctionTextRaw = '';
-    let correctionPhotosRaw = '';
+  // ★★★ 追加: 正しいシートからの送信かを確認 ★★★
+  if (e && e.range && e.range.getSheet().getName() !== SHEET_NAME_CORRECTION_RESPONSES) {
+    Logger.log('onCorrectionFormSubmit: Not a submission to the correction sheet. Skipping.');
+    return;
+  }
 
-    if (v && v.length >= 4) {
-      managementId = String(v[1] || '').trim();
-      correctionTextRaw = String(v[2] || '');
-      correctionPhotosRaw = String(v[3] || '');
+  try {
+    // e.valuesから取得を試みる (e.g., [タイムスタンプ, 管理ID, 改善内容, 写真URL])
+    const values = e.values;
+    let managementId, correctionTextRaw, correctionPhotosRaw;
+
+    if (values && values.length > 1) {
+      managementId = String(values[1]).trim();
+      correctionTextRaw = String(values[2] || '');
+      correctionPhotosRaw = String(values[3] || '');
     } else {
-      // フォールバック: namedValues から推測
+      // フォールバック: namedValuesから取得
       const named = e && e.namedValues ? e.namedValues : {};
-      const pick = (keys) => {
+      function pick(keys) {
         for (var i = 0; i < keys.length; i++) {
           const k = Object.keys(named).find(nk => nk.indexOf(keys[i]) !== -1);
           if (k) return named[k];
         }
         return '';
-      };
+      }
       managementId = String(pick(['管理ID'])).trim();
       correctionTextRaw = String(pick(['改善内容']));
       correctionPhotosRaw = String(pick(['改善後の写真', '写真']));
     }
-
+    
     const correctionPhotoUrls = extractUrlsFromCell_((correctionPhotosRaw || '').toString());
 
     if (!managementId) {
-      Logger.log('管理IDが取得できませんでした。event details=%s', JSON.stringify({ hasValues: !!v }));
+      Logger.log('管理IDが取得できませんでした。e.values=%s, e.namedValues=%s', 
+        JSON.stringify(e.values), JSON.stringify(e.namedValues));
       return;
     }
 
-    // 対応する報告行を検索
+    // 対応する報告行を検索 (TextFinder使用)
     const row = findRowByManagementId_(managementId);
     if (row < 0) {
       Logger.log('管理IDに一致する行が見つかりません: %s', managementId);

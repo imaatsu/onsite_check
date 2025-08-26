@@ -54,14 +54,14 @@ function writeManagementId_(row, managementId) {
 }
 
 /**
- * 報告一覧のB列（管理ID）で行を検索
+ * 報告一覧のB列（管理ID）で行を検索 (TextFinder使用)
  */
 function findRowByManagementId_(managementId) {
   const sheet = getReportSheet_();
-  const range = sheet.getRange('B:B');
-  const finder = range.createTextFinder(String(managementId).trim()).matchEntireCell(true);
-  const found = finder.findNext();
-  return found ? found.getRow() : -1;
+  const range = sheet.getRange("B:B");
+  const textFinder = range.createTextFinder(managementId).matchEntireCell(true);
+  const foundRange = textFinder.findNext();
+  return foundRange ? foundRange.getRow() : -1;
 }
 
 /**
@@ -84,8 +84,6 @@ function getNotificationTargetsByPlace_(place) {
 
 /**
  * 指定行の A:J を取得（配列）。
- * 1: タイムスタンプ, 2: 管理ID, 3: ステータス, 4: 報告者名, 5: 現場場所,
- * 6: 問題点の内容, 7: 問題点の写真, 8: 改善報告日時, 9: 改善内容, 10: 改善後の写真
  */
 function getReportRowValues_(row) {
   const sheet = getReportSheet_();
@@ -102,7 +100,6 @@ function writeCorrectionToRow_(row, correctionDatetime, correctionText, photoUrl
 
 /**
  * 問題点の写真セル/改善後の写真セルからURLリストを抽出
- * - Googleフォームの複数ファイルは、改行またはカンマ区切りで格納されることがあるため両対応
  */
 function extractUrlsFromCell_(cellValue) {
   if (!cellValue) return [];
@@ -112,14 +109,14 @@ function extractUrlsFromCell_(cellValue) {
 }
 
 /**
- * Driveの共有権限を「組織内、リンクを知っている全員が閲覧可能」に変更
- * 失敗しても処理は継続し、失敗ファイルはログに出力
+ * Driveの共有権限を「組織内でリンクを知っている全員が閲覧可能」に変更
  */
 function relaxDrivePermissionsDomainWithLink_(urls) {
   const ids = urls.map(extractDriveFileIdFromUrl_).filter(Boolean);
   ids.forEach(id => {
     try {
       const file = DriveApp.getFileById(id);
+      // 組織/ドメイン内のユーザーのみがリンクでアクセス可能
       file.setSharing(DriveApp.Access.DOMAIN_WITH_LINK, DriveApp.Permission.VIEW);
     } catch (err) {
       Logger.log('[Drive permission] Failed to relax sharing for id=%s: %s', id, err);
@@ -129,7 +126,6 @@ function relaxDrivePermissionsDomainWithLink_(urls) {
 
 /**
  * GoogleドライブのURLから fileId を抽出
- * 例: https://drive.google.com/file/d/<id>/view  または open?id=<id>
  */
 function extractDriveFileIdFromUrl_(url) {
   try {
